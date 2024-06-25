@@ -35,5 +35,5 @@ jobs:
       - name: Archive the build
         uses: actions/upload-artifact@v2
         with:
-          name: exe-file
+          name: otogi-frontier-updater
           path: dist/
