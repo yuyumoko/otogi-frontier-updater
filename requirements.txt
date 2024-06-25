@@ -1,0 +1,10 @@
+pydantic
+ujson
+tqdm
+colorlog
+dumb-menu
+tenacity
+requests
+aiohttp
+pycryptodome
+UnityPy

@@ -1,0 +1,26 @@
+[project]
+name = "flowery"
+version = "0.0.1"
+description = "💐 Python image processing library focusing on drawing"
+authors = [{ name = "Akirami", email = "akiramiaya@outlook.com" }]
+requires-python = ">=3.10,<4.0"
+license = { text = "MIT" }
+readme = "README.md"
+dependencies = [
+    "pillow>=10.0.0",
+    "opencv-python-headless>=4.8.0.76",
+    "typing-extensions>=4.7.1",
+]
+
+[project.urls]
+repository = "https://github.com/A-kirami/flowery"
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "black>=23.9.1",
+    "isort>=5.12.0",
+]
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
