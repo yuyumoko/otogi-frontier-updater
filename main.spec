@@ -5,7 +5,7 @@ block_cipher = None
 
 datas = [
     (
-        "venv/Lib/site-packages/UnityPy/resources/uncompressed.tpk",
+        "lib/uncompressed.tpk",
         "UnityPy/resources",
     )
 ]
