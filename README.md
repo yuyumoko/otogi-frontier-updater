@@ -9,7 +9,7 @@
 [github]
 repo = yuyumoko/OtogiFrontierResources
 branch = main
-token = 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
+token = 
 ```
 
 然后运行工具即可
