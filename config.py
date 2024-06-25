@@ -1,5 +1,7 @@
+import os
 from pathlib import Path
-from utils import SimpleConfig
+from utils import SimpleConfig, log
+
 
 CachePath = Path("update_cache")
 CachePath.mkdir(exist_ok=True)
@@ -19,7 +21,8 @@ http_proxy = update_config.get(section, "http_proxy", fallback="")
 
 update_server_path = Path("update_server.ini")
 if not update_server_path.exists():
-    raise FileNotFoundError(f"you need update_server.ini file")
+    log.error("update_server.ini not found")
+    
 
 update_server_config = SimpleConfig(update_server_path)
 resource_repo = update_server_config.get("github", "repo")
