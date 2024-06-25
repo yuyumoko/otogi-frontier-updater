@@ -35,4 +35,4 @@ class LocalGame:
     def saveDataSpecial(self, special_data):
         special_path = self.game_root / SpecialPath
         special_path.parent.mkdir(parents=True, exist_ok=True)
-        save_json(special_path, special_data)
+        save_json(special_data, special_path)
