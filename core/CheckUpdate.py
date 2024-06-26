@@ -314,10 +314,12 @@ async def check_game_update(
     log.info(f"正在获取可更新角色总数")
     game_ids = await GameApi.char.getUserCharacterIDS()
     log.info(f"可更新角色总数: {len(game_ids)}")
-
+    
     diff_ids = list(set(game_ids).difference(set(local_ids)))
-    # diff_ids = [21491]
-
+    
+    exclude_ids = [80831, 80261, 15111]
+    diff_ids = [x for x in diff_ids if x not in exclude_ids]
+    
     log.info(f"正在获取购入报酬更新")
     local_special = lg.getSpecial()
     local_special_Episodes = local_special["Episodes"]
@@ -332,6 +334,9 @@ async def check_game_update(
 
     for index, char_id in enumerate(diff_ids):
         charInfo = await GameApi.char.getCharacterInfo(char_id)
+        if charInfo is None:
+            log.warning(f"获取角色信息失败: {char_id}")
+            continue
         charName = charInfo["n"]
 
         log.info(f"正在更新角色 [{charName}] ({index + 1}/{len(diff_ids)})")
