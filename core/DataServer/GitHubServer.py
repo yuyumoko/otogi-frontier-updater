@@ -66,12 +66,16 @@ class GitHubServer(GitHubFileFetcher):
     @AsyncCache()
     async def getCharacterEpisodes(self, character_id):
         episodes = await self.fetch_json(f"VieableEpisodeList/{character_id}")
-        return {
-            "RootMonsterId": character_id,
-            "RootSpiritId": 0,
-            "Favorite": False,
-            "Episodes": episodes,
-        }
+        
+        if isinstance(episodes, list):
+            return {
+                "RootMonsterId": character_id,
+                "RootSpiritId": 0,
+                "Favorite": False,
+                "Episodes": episodes,
+            }
+        else:
+            return episodes
 
     @AsyncCache()
     async def getMScenes(self, MSceneId):

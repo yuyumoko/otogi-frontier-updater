@@ -104,15 +104,29 @@ async def save_MScenes_MAdults_res(
 
                 pbar.close()
 
-            if len(MScene["MRichSceneDetails"]) > 0:
-                pbar = tqdm(MScene["MRichSceneDetails"], desc="获取章节资源")
-                for MRichSceneDetail in pbar:
-                    for chara in MRichSceneDetail["Characters"]:
+            if MRichSceneDetails := MScene.get("MRichSceneDetails"):
+                if len(MRichSceneDetails) > 0:
+                    pbar = tqdm(MRichSceneDetails, desc="获取章节资源")
+                    for MRichSceneDetail in pbar:
+                        for chara in MRichSceneDetail["Characters"]:
+                            await save_chara_res(
+                                chara["MMonsterId"],
+                                output_path,
+                                force_download=force_download,
+                            )
+
+            
+            if MSceneDetails := MScene.get("MSceneDetails"):
+                if len(MSceneDetails) > 0:
+                    pbar = tqdm(MSceneDetails, desc="获取章节资源")
+                    for MSceneDetail in pbar:
                         await save_chara_res(
-                            chara["MMonsterId"],
-                            output_path,
-                            force_download=force_download,
-                        )
+                                MSceneDetail["MMonsterId"],
+                                output_path,
+                                force_download=force_download,
+                            )
+
+                
 
     async def BGM_handler(MAdults, output_path):
         GameApi = OtogiApi(proxy=http_proxy)
