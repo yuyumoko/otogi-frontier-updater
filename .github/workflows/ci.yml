@@ -2,8 +2,6 @@ name: Build and Release EXE
 
 on:
   push:
-    branches:
-      - main
     tags:
       - "*"
   pull_request:
@@ -44,4 +42,5 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "dist/*"
+          bodyFile: "README.md"
           token: ${{ secrets.GITHUB_TOKEN }}
