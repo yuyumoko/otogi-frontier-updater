@@ -1,9 +1,11 @@
-name: Build EXE
+name: Build and Release EXE
 
 on:
   push:
     branches:
       - main
+    tags:
+      - "*"
   pull_request:
     branches:
       - main
@@ -14,12 +16,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11.5"
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
@@ -37,3 +40,8 @@ jobs:
         with:
           name: otogi-frontier-updater
           path: dist/
+
+      - uses: ncipollo/release-action@v1
+        with:
+          bodyFile: "dist/otogi-frontier-updater.zip"
+          token: ${{ secrets.GITHUB_TOKEN }}
