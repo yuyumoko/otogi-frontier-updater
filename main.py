@@ -61,17 +61,17 @@ def run_check_update():
 
 
 def show_menu():
-    # try:
-    Menu(
-        title=f"{__title__} v{__version__} - {__description__}",
-        options={
-            run_check_update: "自动更新游戏缺少的资源文件 - (第一次需要选择游戏目录)"
-        },
-    ).show()
-    # except Exception as e:
-    #     log.error(e)
-    # finally:
-    os.system("pause")
+    try:
+        Menu(
+            title=f"{__title__} v{__version__} - {__description__}",
+            options={
+                run_check_update: "自动更新游戏缺少的资源文件 - (第一次需要选择游戏目录)"
+            },
+        ).show()
+    except Exception as e:
+        log.exception(e)
+    finally:
+        os.system("pause")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,14 @@ import asyncio
 import ujson as json
 
 from aiohttp import ClientSession, ClientTimeout
+from tenacity import retry, stop_after_attempt, wait_fixed, RetryCallState, _utils
 
+from utils import log
+
+def retry_log(retry_state: "RetryCallState"):
+    if retry_state.attempt_number > 1:
+        fn_name = _utils.get_callback_name(retry_state.fn)
+        log.debug(fn_name + " 重试次数: %s" % retry_state.attempt_number)
 
 class GitHubFileFetcher:
     def __init__(self, repo, branch, auth_token, proxy=True):
@@ -59,6 +66,7 @@ class GitHubFileFetcher:
     async def fetch_json(self, file_name):
         return json.loads(await self.fetch_text(file_name))
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(1), before=retry_log)
     async def fetch_text(self, file_name):
         baseUrl = await self.get_github_file_url()
 
@@ -73,6 +81,7 @@ class GitHubFileFetcher:
                     return None
                 return await response.text()
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(1), before=retry_log)
     async def fetch_binary(self, file_name):
         baseUrl = await self.get_github_file_url()
 

@@ -4,7 +4,7 @@ import asyncio
 import aiohttp
 from pydantic import BaseModel
 from aiohttp import client_exceptions
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import retry, stop_after_attempt, wait_fixed, RetryCallState, _utils
 from enum import Enum
 from types import TracebackType
 from typing import Any, Optional, Type, TypeVar
@@ -14,6 +14,12 @@ from .logger import Logger
 T = TypeVar("T")
 
 log = Logger("NET").logger
+
+
+def retry_log(retry_state: "RetryCallState"):
+    if retry_state.attempt_number > 1:
+        fn_name = _utils.get_callback_name(retry_state.fn)
+        log.debug(fn_name + " 重试次数: %s" % retry_state.attempt_number)
 
 
 class HTTPMethod(Enum):
@@ -92,6 +98,9 @@ class HTTPSessionApi:
         """关闭客户端会话"""
         await self._session._session.close()
 
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_fixed(1), before=retry_log, reraise=True
+    )
     async def request_json(
         self, path: str, method: HTTPMethod = None, **kwargs
     ) -> RespondJson:
@@ -119,7 +128,7 @@ class HTTPSessionApi:
             chunk_size=chunk_size,
             **kwargs,
         )
-    
+
     @HTTPSession.Session
     async def __request__(
         self,
