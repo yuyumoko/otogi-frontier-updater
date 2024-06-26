@@ -43,5 +43,5 @@ jobs:
 
       - uses: ncipollo/release-action@v1
         with:
-          body: "dist/otogi-frontier-updater.exe"
+          artifacts: "dist/*"
           token: ${{ secrets.GITHUB_TOKEN }}
