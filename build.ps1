@@ -15,7 +15,7 @@ Copy-Item ..\update_server.ini .\$releasedir\update_server.ini
 
 # rename main.exe
 $newname = "otogi-frontier-updater.exe"
-Move-Item -Force .\dist\main.exe .\$newname
+Move-Item -Force .\dist\otogi-frontier-updater.exe .\$newname
 
 # move exe to run
 Copy-Item -Force .\$newname ..\otogi-frontier-updater.exe
