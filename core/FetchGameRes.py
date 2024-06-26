@@ -24,18 +24,17 @@ from core.FixHomeStandImage import FixHomeStandImage
 
 class FetchGameRes:
     GameApi: OtogiApi = None
-    CharaIcon: UnityEnv = None
 
     def __init__(self, GameApi: OtogiApi = None):
         self.GameApi = GameApi or OtogiApi(proxy=http_proxy)
-        self.CharaIcon = UnityPy.load(CharaIconPath)
 
     async def save_chara_icon(self, char_id, save_path: Path, force_download=False):
         icon_path = save_path / CharacterIconPath
         icon_path.mkdir(parents=True, exist_ok=True)
         icon_path = icon_path / f"{char_id}.png"
         if not icon_path.exists() or force_download:
-            pbar = tqdm(self.CharaIcon.objects, desc="保存角色图标")
+            CharaIcon = UnityPy.load(CharaIconPath.read_bytes())
+            pbar = tqdm(CharaIcon.objects, desc="保存角色图标")
             for obj in pbar:
                 if obj.type.name == "Sprite":
                     data = obj.read()
