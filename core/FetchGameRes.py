@@ -40,7 +40,7 @@ class FetchGameRes:
                 if obj.type.name == "Sprite":
                     data = obj.read()
                     if data.name == str(char_id):
-                        data.image.save(save_path)
+                        data.image.save(icon_path)
                         pbar.close()
                         return True
         return False
