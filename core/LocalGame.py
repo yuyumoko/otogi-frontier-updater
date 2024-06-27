@@ -1,7 +1,11 @@
 from pathlib import Path
 
 from utils.helper import load_json, save_json
-from FileDataPath import CharacterIconPath, SpecialPath
+from FileDataPath import CharacterIconPath, SpecialPath, ZH_MScenesPath, ZH_MAdultsPath
+
+
+def get_path_ids(path: Path):
+    return [x.stem for x in path.iterdir() if x.stem.isdigit()]
 
 
 class LocalGame:
@@ -10,7 +14,7 @@ class LocalGame:
     def __init__(self, game_root: Path):
         self.game_root = game_root
 
-    def valid_game_path(self):
+    def validGamePath(self):
         homestand_exists = (self.game_root / CharacterIconPath).exists()
         special_exists = (self.game_root / SpecialPath).exists()
         return homestand_exists and special_exists
@@ -36,3 +40,9 @@ class LocalGame:
         special_path = self.game_root / SpecialPath
         special_path.parent.mkdir(parents=True, exist_ok=True)
         save_json(special_data, special_path)
+
+    def getZH_MSceneIds(self):
+        return get_path_ids(self.game_root / ZH_MScenesPath)
+
+    def getZH_MAdultIds(self):
+        return get_path_ids(self.game_root / ZH_MAdultsPath)

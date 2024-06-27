@@ -37,7 +37,7 @@ async def init_chara_icon_cache(GameApi: OtogiApi):
     all_char_icon_size = await GameApi.resource.getAllCharacterIconDataSize()
     log.info(f"图标大小: [{file_size_format(all_char_icon_size)}]")
     if not CharaIconPath.exists() or CharaIconPath.stat().st_size != all_char_icon_size:
-        dl_bar = tqdm(total=all_char_icon_size, desc="更新缓存图标数据中")
+        dl_bar = tqdm(total=all_char_icon_size, desc="更新缓存图标数据中", unit="B", unit_scale=True)
         chara_icon_file_f = CharaIconPath.open("wb+")
 
         def chunk_handler(chunk):
@@ -294,7 +294,7 @@ async def check_game_update(
     if output_path is None:
         output_path = lg.game_root
 
-    log.info(f"正在检查更新..")
+    log.info(f"正在检查资源更新..")
 
     local_ids = lg.getCharacterIDS()
     log.info(f"本地角色ID数量: {len(local_ids)}")

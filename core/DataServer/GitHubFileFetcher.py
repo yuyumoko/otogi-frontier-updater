@@ -7,10 +7,12 @@ from tenacity import retry, stop_after_attempt, wait_fixed, RetryCallState, _uti
 
 from utils import log
 
+
 def retry_log(retry_state: "RetryCallState"):
     if retry_state.attempt_number > 1:
         fn_name = _utils.get_callback_name(retry_state.fn)
         log.debug(fn_name + " 重试次数: %s" % retry_state.attempt_number)
+
 
 class GitHubFileFetcher:
     def __init__(self, repo, branch, auth_token, proxy=True):
@@ -28,7 +30,9 @@ class GitHubFileFetcher:
             return base_url + repo_path_format
 
         if self.default_github_proxy is not None:
-            proxy_url = self.default_github_proxy["proxy_url"].format(repo=self.repo, branch=self.branch)
+            proxy_url = self.default_github_proxy["proxy_url"].format(
+                repo=self.repo, branch=self.branch
+            )
             real_url = self.default_github_proxy["url"] + proxy_url
             return real_url
 
@@ -82,7 +86,12 @@ class GitHubFileFetcher:
                 return await response.text()
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(1), before=retry_log)
-    async def fetch_binary(self, file_name):
+    async def fetch_binary(
+        self,
+        file_name,
+        chunk_handler: callable = None,
+        chunk_size: int = 1024,
+    ):
         baseUrl = await self.get_github_file_url()
 
         url = baseUrl + file_name
@@ -94,7 +103,16 @@ class GitHubFileFetcher:
             async with session.request("GET", url, headers=headers) as response:
                 if response.status != 200:
                     return None
-                return await response.read()
+
+                if chunk_handler is not None:
+                    data_len = int(response.headers.get("Content-Length", 0))
+                    data = b""
+                    async for chunk in response.content.iter_chunked(chunk_size):
+                        chunk_handler(chunk, data_len)
+                        data += chunk
+                    return data
+                else:
+                    return await response.read()
 
 
 async def main():

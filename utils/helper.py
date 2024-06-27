@@ -33,3 +33,6 @@ def save_json(data, path: Path):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
 
+
+def ids_difference(old_ids, new_ids):
+    return list(set(new_ids).difference(set(old_ids)))

@@ -1,11 +1,38 @@
 import gzip
 import ujson as json
 
-from utils import AsyncCache
+from pathlib import Path
+from tqdm import tqdm
+
+from utils import AsyncCache, save_json
 
 from .GitHubFileFetcher import GitHubFileFetcher
 
 from config import resource_repo, resource_branch, resource_token
+
+
+async def save_server_json(semaphore, file_name, server_path: str, output_path: Path):
+    res_server = GitHubServer()
+    async with semaphore:
+        res = await res_server.fetch_json(f"{server_path}{file_name}")
+        save_json(res, output_path / str(file_name))
+
+
+async def save_server_binary(
+    semaphore,
+    file_name,
+    server_path: str,
+    output_path: Path,
+    chunk_handler: callable = None,
+    chunk_size: int = 1024,
+):
+    res_server = GitHubServer()
+    async with semaphore:
+        res = await res_server.fetch_binary(
+            f"{server_path}{file_name}", chunk_handler, chunk_size
+        )
+        with (output_path / str(file_name)).open("wb") as f:
+            f.write(res)
 
 
 def str_path_to_dict(raw_data):
@@ -42,7 +69,16 @@ class GitHubServer(GitHubFileFetcher):
             return
 
         path = "hash.json.gz"
-        raw_data = await self.fetch_binary(path)
+
+        pbar = tqdm(
+            desc="Fetching server data", unit="B", unit_scale=True, unit_divisor=1024
+        )
+
+        def chunk_handler(chunk, data_len):
+            pbar.total = data_len
+            pbar.update(len(chunk))
+
+        raw_data = await self.fetch_binary(path, chunk_handler=chunk_handler)
         raw_data = json.loads(gzip.decompress(raw_data))
         self.hash_data = str_path_to_dict(raw_data)
 
@@ -66,7 +102,7 @@ class GitHubServer(GitHubFileFetcher):
     @AsyncCache()
     async def getCharacterEpisodes(self, character_id):
         episodes = await self.fetch_json(f"VieableEpisodeList/{character_id}")
-        
+
         if isinstance(episodes, list):
             return {
                 "RootMonsterId": character_id,

@@ -42,5 +42,5 @@ jobs:
       - uses: ncipollo/release-action@v1
         with:
           artifacts: "dist/*"
-          bodyFile: "README.md"
+          bodyFile: "CHANGELOG.md"
           token: ${{ secrets.GITHUB_TOKEN }}
