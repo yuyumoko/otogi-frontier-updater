@@ -37,7 +37,12 @@ async def init_chara_icon_cache(GameApi: OtogiApi):
     all_char_icon_size = await GameApi.resource.getAllCharacterIconDataSize()
     log.info(f"图标大小: [{file_size_format(all_char_icon_size)}]")
     if not CharaIconPath.exists() or CharaIconPath.stat().st_size != all_char_icon_size:
-        dl_bar = tqdm(total=all_char_icon_size, desc="更新缓存图标数据中", unit="B", unit_scale=True)
+        dl_bar = tqdm(
+            total=all_char_icon_size,
+            desc="更新缓存图标数据中",
+            unit="B",
+            unit_scale=True,
+        )
         chara_icon_file_f = CharaIconPath.open("wb+")
 
         def chunk_handler(chunk):
@@ -115,18 +120,15 @@ async def save_MScenes_MAdults_res(
                                 force_download=force_download,
                             )
 
-            
             if MSceneDetails := MScene.get("MSceneDetails"):
                 if len(MSceneDetails) > 0:
                     pbar = tqdm(MSceneDetails, desc="获取章节资源")
                     for MSceneDetail in pbar:
                         await save_chara_res(
-                                MSceneDetail["MMonsterId"],
-                                output_path,
-                                force_download=force_download,
-                            )
-
-                
+                            MSceneDetail["MMonsterId"],
+                            output_path,
+                            force_download=force_download,
+                        )
 
     async def BGM_handler(MAdults, output_path):
         GameApi = OtogiApi(proxy=http_proxy)
@@ -236,6 +238,7 @@ async def save_episode_res(
     MAdultId,
     Description,
     output_path: Path,
+    update_output_path: Path = None,
     force_download=False,
 ):
     GameApi = OtogiApi(proxy=http_proxy)
@@ -251,8 +254,12 @@ async def save_episode_res(
         return
 
     GameResApi = FetchGameRes(GameApi)
-    await GameResApi.save_MScenes(MSceneId, output_path, force_download)
-    await GameResApi.save_MAdults(MAdultId, output_path, force_download)
+    await GameResApi.save_MScenes(
+        MSceneId, output_path, update_output_path, force_download
+    )
+    await GameResApi.save_MAdults(
+        MAdultId, output_path, update_output_path, force_download
+    )
 
     await save_MScenes_MAdults_res(MSceneId, MAdultId, output_path, force_download)
 
@@ -289,7 +296,10 @@ async def save_specials(
 
 
 async def check_game_update(
-    lg: LocalGame, output_path: Path = None, force_download=False
+    lg: LocalGame,
+    output_path: Path = None,
+    update_output_path: Path = None,
+    force_download=False,
 ):
     if output_path is None:
         output_path = lg.game_root
@@ -314,12 +324,12 @@ async def check_game_update(
     log.info(f"正在获取可更新角色总数")
     game_ids = await GameApi.char.getUserCharacterIDS()
     log.info(f"可更新角色总数: {len(game_ids)}")
-    
+
     diff_ids = list(set(game_ids).difference(set(local_ids)))
-    
+
     exclude_ids = [80831, 80261, 15111]
     diff_ids = [x for x in diff_ids if x not in exclude_ids]
-    
+
     log.info(f"正在获取购入报酬更新")
     local_special = lg.getSpecial()
     local_special_Episodes = local_special["Episodes"]
@@ -365,7 +375,8 @@ async def check_game_update(
                 MAdultId,
                 Description,
                 output_path,
-                force_download=force_download,
+                update_output_path,
+                force_download,
             )
 
         request_res_task = [
@@ -373,3 +384,11 @@ async def check_game_update(
             FetchGameRes().save_stand_image(char_id, output_path, force_download),
         ]
         await tqdm_asyncio.gather(*request_res_task)
+
+    if update_output_path is not None:
+        log.info(f"正在保存更新数据")
+        VieableEpisodeFile = update_output_path / VieableEpisodeListPath / str(char_id)
+        save_json(char_episodes["Episodes"], VieableEpisodeFile)
+
+        if len(res_special) != 0:
+            lg.saveDataSpecial(local_special, update_output_path)

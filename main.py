@@ -4,6 +4,7 @@ import sys
 import asyncio
 import argparse
 
+from datetime import datetime
 from pathlib import Path
 
 from __version__ import __title__, __version__, __description__
@@ -12,9 +13,10 @@ from utils.logger import log
 
 from utils import ArgRequire, ArgRequireOption, Menu
 
-
+from core.OtogiFrontier import OtogiApi
 from core.LocalGame import LocalGame
 
+from config import setGameToken
 
 from tkinter import filedialog
 
@@ -44,7 +46,7 @@ def get_game_path(game_path: Path):
     return game_path
 
 
-def request_game_path(game_path: Path = None):
+def require_game_path(game_path: Path = None):
     if game_path is None:
         game_path = Path(".")
 
@@ -57,21 +59,59 @@ def request_game_path(game_path: Path = None):
     return lg
 
 
-async def check_update():
+@ag.apply(lambda msg: input(msg), "输入游戏token")
+def get_game_token(token):
+    if not OtogiApi.valid_access_token(token):
+        log.error("无效的token, 类似于: 80f2b125-bf29-4205-9d4e-ab6d06614f55")
+        return
+
+    return token
+
+
+async def check_update(update_output_path: Path = None):
     from core.CheckUpdate import check_game_update
 
-    lg = request_game_path()
+    lg = require_game_path()
     if lg is None:
         return
 
-    await check_game_update(lg, None, False)
+    await check_game_update(lg, update_output_path=lg.game_root / update_output_path)
     log.info("更新完成")
+
+
+async def check_update_with_token():
+    print(
+        """
+注意: *请先更新离线资源到最新后再选次选项*
+-------------------------------------------------------
+这个是游戏已经出的角色, 更新游戏资源又没有
+说明服务器资源并没有更新, 但你可以通过获取游戏token强制更新
+这样的话, 会缺少汉化文件
+更新后输出的更新包可以提供给管理员, 用于更新服务器资源
+
+token获取方法:
+-------------------------------------------------------
+进入游戏后, 浏览器按F12 选择Network(网络)
+然后游戏内点击角色一览
+在控制台看到All并选择, 找到Headers里面的Token字段即可
+          """
+    )
+    token = get_game_token()
+    update_output_path = Path(
+        f"更新数据/[{datetime.now().strftime('%Y-%m-%d')}] 服务器数据"
+    )
+
+    await OtogiApi(token).char.getUserCharacterIDS()
+
+    setGameToken(token)
+    await check_update(update_output_path)
+    log.info(f"更新数据已保存到游戏目录下的: {update_output_path}")
 
 
 async def check_translation():
     from core.CheckTranslate import check_translate
 
-    lg = request_game_path()
+    lg = require_game_path()
     if lg is None:
         return
 
@@ -82,7 +122,7 @@ async def check_translation():
 async def install_client():
     from core.InstallClient import install_client
 
-    lg = request_game_path()
+    lg = require_game_path()
     if lg is None:
         return
 
@@ -92,6 +132,10 @@ async def install_client():
 
 def run_check_update():
     asyncio.run(check_update())
+
+
+def run_check_update_with_token():
+    asyncio.run(check_update_with_token())
 
 
 def run_check_translation():
@@ -107,9 +151,10 @@ def show_menu():
         Menu(
             title=f"{__title__} v{__version__} - {__description__} (第一次需要选择游戏目录)",
             options={
-                run_check_update: "更新游戏缺少的资源文件",
-                run_check_translation: "更新游戏汉化文件",
-                run_install_client: "更新游戏html客户端 (首次需要更新, 为了支持更新的动画)",
+                run_check_update: "1.更新游戏缺少的资源文件",
+                run_check_translation: "2.更新游戏汉化文件",
+                run_install_client: "3.更新游戏html客户端 (首次需要更新, 为了支持更新的动画)",
+                run_check_update_with_token: "4.使用游戏的token更新资源",
             },
         ).show()
     except Exception as e:
@@ -136,6 +181,13 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-ct",
+        "--check-update-with-token",
+        action="store_true",
+        help="使用游戏的token更新资源",
+    )
+
+    parser.add_argument(
         "-t",
         "--check-translation",
         action="store_true",
@@ -153,6 +205,9 @@ if __name__ == "__main__":
 
     if args.check_update:
         run_check_update()
+
+    if args.check_update_with_token:
+        run_check_update_with_token()
 
     if args.check_translation:
         run_check_translation()

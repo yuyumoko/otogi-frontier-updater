@@ -130,7 +130,13 @@ class FetchGameRes:
             return True
         return False
 
-    async def save_MScenes(self, MSceneId, save_path: Path, force_download=False):
+    async def save_MScenes(
+        self,
+        MSceneId,
+        save_path: Path,
+        update_output_path: Path = None,
+        force_download=False,
+    ):
         MScenes = await self.GameApi.char.getMScenes(MSceneId)
         if MScenes is None:
             return False
@@ -139,6 +145,11 @@ class FetchGameRes:
         MScenes_file = MScenes_path / str(MSceneId)
         if not MScenes_file.exists() or force_download:
             save_json(MScenes, MScenes_file)
+
+        if update_output_path is not None:
+            update_file = update_output_path / MScenesPath / str(MSceneId)
+            if not update_file.exists() or force_download:
+                save_json(MScenes, update_file)
 
         if self.GameApi.char.use_github_data:
             MScenes = await self.GameApi.char.getZHMScenes(MSceneId)
@@ -151,7 +162,13 @@ class FetchGameRes:
             if not MScenes_file.exists() or force_download:
                 save_json(MScenes, MScenes_file)
 
-    async def save_MAdults(self, MAdultId, save_path: Path, force_download=False):
+    async def save_MAdults(
+        self,
+        MAdultId,
+        save_path: Path,
+        update_output_path: Path = None,
+        force_download=False,
+    ):
         MAdults = await self.GameApi.char.getMAdults(MAdultId)
         if MAdults is None:
             return False
@@ -160,6 +177,11 @@ class FetchGameRes:
         MAdults_file = MAdults_path / str(MAdultId)
         if not MAdults_file.exists() or force_download:
             save_json(MAdults, MAdults_file)
+
+        if update_output_path is not None:
+            update_file = update_output_path / MAdultsPath / str(MAdultId)
+            if not update_file.exists() or force_download:
+                save_json(MAdults, update_file)
 
         if self.GameApi.char.use_github_data:
             MAdults = await self.GameApi.char.getZHMAdults(MAdultId)

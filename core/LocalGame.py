@@ -36,10 +36,9 @@ class LocalGame:
     def getSpecial(self):
         return load_json(self.game_root / SpecialPath)
 
-    def saveDataSpecial(self, special_data):
-        special_path = self.game_root / SpecialPath
-        special_path.parent.mkdir(parents=True, exist_ok=True)
-        save_json(special_data, special_path)
+    def saveDataSpecial(self, special_data, output_path: Path=None):
+        path_root = output_path or self.game_root
+        save_json(special_data, path_root / SpecialPath)
 
     def getZH_MSceneIds(self):
         return get_path_ids(self.game_root / ZH_MScenesPath)

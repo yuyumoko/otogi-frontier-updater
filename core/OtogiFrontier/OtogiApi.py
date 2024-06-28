@@ -3,13 +3,15 @@ import re
 from .GameData import GameData
 from .GameResource import GameResource
 
+from config import getGameToken
 
 class OtogiApi:
     char: GameData
     resource: GameResource
     access_token: str
 
-    def valid_access_token(self, access_token):
+    @staticmethod
+    def valid_access_token(access_token):
         uuid_pattern = re.compile(
             r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
         )
@@ -35,10 +37,11 @@ class OtogiApi:
         }
 
     def __init__(self, access_token="", proxy=""):
+        access_token = access_token or getGameToken()
         if access_token != "":
-            if not self.valid_access_token(access_token):
+            if not OtogiApi.valid_access_token(access_token):
                 raise ValueError(
-                    "access token 错误, 类似于: 80f2b125-bf29-4205-9d4e-ab6d06614f55"
+                    "token 错误, 类似于: 80f2b125-bf29-4205-9d4e-ab6d06614f55"
                 )
 
         self.access_token = access_token

@@ -4,6 +4,8 @@ import ujson as json
 from utils.session import HTTPSessionApi
 from ..DataServer.GitHubServer import GitHubServer
 
+from utils import AsyncCache
+
 API_HOST = "https://otogi-rest.otogi-frontier.com/api/"
 
 
@@ -66,6 +68,7 @@ class GameData(HTTPSessionApi):
 
         return self.characterData.get(id)
 
+    @AsyncCache()
     async def getCharacterStory(self):
         url = "Episode/CharacterStory?CharacterStoryTypes=Monster&CharacterStoryTypes=Spirit&CharacterStoryTypes=Special&CharacterStoryTypes=Premium"
         return (await self.request_json(url)).data
