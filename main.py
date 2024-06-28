@@ -75,7 +75,10 @@ async def check_update(update_output_path: Path = None):
     if lg is None:
         return
 
-    await check_game_update(lg, update_output_path=lg.game_root / update_output_path)
+    if update_output_path is not None:
+        update_output_path = lg.game_root / update_output_path
+
+    await check_game_update(lg, update_output_path=update_output_path)
     log.info("更新完成")
 
 
@@ -146,6 +149,17 @@ def run_install_client():
     asyncio.run(install_client())
 
 
+def run_game_web_server():
+    from aiohttp import web
+
+    lg = require_game_path()
+    if lg is None:
+        return
+    app = web.Application()
+    app.add_routes([web.static("/", lg.game_root, show_index=True)])
+    web.run_app(app)
+
+
 def show_menu():
     try:
         Menu(
@@ -155,6 +169,7 @@ def show_menu():
                 run_check_translation: "2.更新游戏汉化文件",
                 run_install_client: "3.更新游戏html客户端 (首次需要更新, 为了支持更新的动画)",
                 run_check_update_with_token: "4.使用游戏的token更新资源",
+                run_game_web_server: "5.我只想启动游戏",
             },
         ).show()
     except Exception as e:
