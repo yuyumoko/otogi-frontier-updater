@@ -149,7 +149,8 @@ def run_install_client():
     asyncio.run(install_client())
 
 
-def run_game_web_server():
+def run_game_web_server(host="0.0.0.0", port=8182):
+    import webbrowser
     from aiohttp import web
 
     lg = require_game_path()
@@ -157,7 +158,13 @@ def run_game_web_server():
         return
     app = web.Application()
     app.add_routes([web.static("/", lg.game_root, show_index=True)])
-    web.run_app(app)
+
+    if (lg.game_root / "启动离线版.html").exists():
+        webbrowser.open(f"http://{host}:{port}/启动离线版.html")
+    else:
+        webbrowser.open(f"http://{host}:{port}/index.html")
+
+    web.run_app(app, host=host, port=port)
 
 
 def show_menu():
@@ -215,6 +222,13 @@ if __name__ == "__main__":
         action="store_true",
         help="安装客户端",
     )
+    
+    parser.add_argument(
+        "-w",
+        "--web-server",
+        action="store_true",
+        help="启动游戏web服务器",
+    )
 
     args = parser.parse_args()
 
@@ -229,6 +243,9 @@ if __name__ == "__main__":
 
     if args.install_client:
         run_install_client()
+        
+    if args.web_server:
+        run_game_web_server()
 
     if len(sys.argv) == 1:
         show_menu()

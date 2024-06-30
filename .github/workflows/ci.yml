@@ -16,27 +16,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Cache Python
-        id: cache-python
-        uses: actions/cache@v4
-        with:
-          path: C:\hostedtoolcache\windows\Python\3.11.5
-          key: ${{ runner.os }}-python-3.11.5
-
       - name: Set up Python
-        if: steps.cache-python.outputs.cache-hit != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11.5"
-          cache: 'pip'
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: C:\Users\runneradmin\AppData\Local\pip\Cache
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |

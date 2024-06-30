@@ -6,6 +6,7 @@ from aiohttp import ClientSession, ClientTimeout
 from tenacity import retry, stop_after_attempt, wait_fixed, RetryCallState, _utils
 
 from utils import log
+from config import http_proxy
 
 
 def retry_log(retry_state: "RetryCallState"):
@@ -15,18 +16,19 @@ def retry_log(retry_state: "RetryCallState"):
 
 
 class GitHubFileFetcher:
-    def __init__(self, repo, branch, auth_token, proxy=True):
+    def __init__(self, repo, branch, auth_token, proxy=True, http_proxy=http_proxy):
         self.repo = repo
         self.branch = branch
         self.auth_token = auth_token
         self.proxy = proxy
+        self.http_proxy = http_proxy
         self.default_github_proxy = None
 
     async def get_github_file_url(self):
         base_url = f"https://raw.githubusercontent.com/"
         repo_path_format = f"{self.repo}/{self.branch}/"
 
-        if not self.proxy:
+        if not self.proxy or (self.http_proxy is not None and self.http_proxy != ""):
             return base_url + repo_path_format
 
         if self.default_github_proxy is not None:
@@ -80,7 +82,7 @@ class GitHubFileFetcher:
         }
 
         async with ClientSession(timeout=ClientTimeout(total=2 * 60)) as session:
-            async with session.request("GET", url, headers=headers) as response:
+            async with session.request("GET", url, headers=headers, proxy=self.http_proxy) as response:
                 if response.status != 200:
                     return None
                 return await response.text()
@@ -100,7 +102,7 @@ class GitHubFileFetcher:
         }
 
         async with ClientSession(timeout=ClientTimeout(total=2 * 60)) as session:
-            async with session.request("GET", url, headers=headers) as response:
+            async with session.request("GET", url, headers=headers, proxy=self.http_proxy) as response:
                 if response.status != 200:
                     return None
 
