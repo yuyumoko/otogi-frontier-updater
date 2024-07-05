@@ -134,6 +134,9 @@ async def save_MScenes_MAdults_res(
 
     async def BGM_handler(MAdults, output_path):
         GameApi = OtogiApi(proxy=http_proxy)
+        if MAdults is None:
+            return
+
         pbar = tqdm(MAdults["MAdultDetails"], desc="获取BGM资源")
         for info in pbar:
             bgm_name = info["BGM"]
