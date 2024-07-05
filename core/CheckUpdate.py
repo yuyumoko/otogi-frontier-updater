@@ -134,8 +134,6 @@ async def save_MScenes_MAdults_res(
 
     async def BGM_handler(MAdults, output_path):
         GameApi = OtogiApi(proxy=http_proxy)
-        if MAdults is None:
-            return
 
         pbar = tqdm(MAdults["MAdultDetails"], desc="获取BGM资源")
         for info in pbar:
@@ -232,17 +230,19 @@ async def save_MScenes_MAdults_res(
                 }
                 save_json(fake_skel_json, StillSpine_path / f"{MAdultId}.json")
 
-    handler_tasks = [
-        MScenes_handler(MScenes, output_path),
-        Voice_handler(MSceneId, MAdultId, output_path),
-    ]
+    handler_tasks = []
+
+    if MScenes is not None:
+        handler_tasks += [
+            MScenes_handler(MScenes, output_path),
+            Voice_handler(MSceneId, MAdultId, output_path),
+        ]
 
     if MAdultId is not None:
+        handler_tasks += [Spine_handler(MAdultId, output_path)]
         MAdults = await GameApi.char.getMAdults(MAdultId)
-        handler_tasks += [
-            BGM_handler(MAdults, output_path),
-            Spine_handler(MAdultId, output_path),
-        ]
+        if MAdults is not None:
+            handler_tasks += [BGM_handler(MAdults, output_path)]
 
     await tqdm_asyncio.gather(*handler_tasks)
 
@@ -301,9 +301,9 @@ async def save_specials(
             print(f"报酬({title})未解锁")
             continue
 
-        if is_local_episode(special):
-            pbar.set_description(f"报酬已获取 [{title}]")
-            continue
+        # if is_local_episode(special):
+        #     pbar.set_description(f"报酬已获取 [{title}]")
+        #     continue
 
         res_special.append(special)
 
