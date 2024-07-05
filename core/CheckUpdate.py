@@ -301,9 +301,9 @@ async def save_specials(
             print(f"报酬({title})未解锁")
             continue
 
-        # if is_local_episode(special):
-        #     pbar.set_description(f"报酬已获取 [{title}]")
-        #     continue
+        if is_local_episode(special):
+            pbar.set_description(f"报酬已获取 [{title}]")
+            continue
 
         res_special.append(special)
 
