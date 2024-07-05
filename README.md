@@ -13,7 +13,7 @@
 [github]
 repo = yuyumoko/OtogiFrontierResources
 branch = main
-token = 
+token = <不是游戏token>
 ```
 
 # 使用代理

@@ -8,7 +8,7 @@ from tqdm import tqdm
 from tqdm.asyncio import tqdm_asyncio
 
 from utils import log, save_json, file_size_format, UnityEnv
-from config import http_proxy, CharaIconPath
+from config import http_proxy, CharaIconPath, update_all_resources
 from FileDataPath import (
     MasterDataPath,
     VieableEpisodeListPath,
@@ -70,10 +70,12 @@ async def save_MScenes_MAdults_res(
 ):
     GameApi = OtogiApi(proxy=http_proxy)
     MScenes = await GameApi.char.getMScenes(MSceneId)
-    MAdults = await GameApi.char.getMAdults(MAdultId)
 
     async def MScenes_handler(MScenes, output_path):
         GameApi = OtogiApi(proxy=http_proxy)
+        if isinstance(MScenes, dict):
+            MScenes = [MScenes]
+
         for MScene in MScenes:
             if len(MScene["MSceneDetails"]) > 0:
                 pbar = tqdm(MScene["MSceneDetails"], desc="获取章节资源")
@@ -161,13 +163,16 @@ async def save_MScenes_MAdults_res(
             save_unity_voice(AdventureVoice_env, AdventureVoice_file)
             pbar.update()
 
-        StillVoice_path = output_path / StillVoicePath / str(MAdultId)
-        if not StillVoice_path.exists() or force_download:
-            StillVoice_path.mkdir(parents=True, exist_ok=True)
-            StillVoice_data = await GameApi.resource.getCharacterStillVoice(MAdultId)
-            StillVoice_env = UnityPy.load(StillVoice_data)
-            save_unity_voice(StillVoice_env, StillVoice_path)
-            pbar.update()
+        if MAdultId is not None:
+            StillVoice_path = output_path / StillVoicePath / str(MAdultId)
+            if not StillVoice_path.exists() or force_download:
+                StillVoice_path.mkdir(parents=True, exist_ok=True)
+                StillVoice_data = await GameApi.resource.getCharacterStillVoice(
+                    MAdultId
+                )
+                StillVoice_env = UnityPy.load(StillVoice_data)
+                save_unity_voice(StillVoice_env, StillVoice_path)
+                pbar.update()
         pbar.close()
 
     async def Spine_handler(MAdultId, output_path):
@@ -226,10 +231,16 @@ async def save_MScenes_MAdults_res(
 
     handler_tasks = [
         MScenes_handler(MScenes, output_path),
-        BGM_handler(MAdults, output_path),
         Voice_handler(MSceneId, MAdultId, output_path),
-        Spine_handler(MAdultId, output_path),
     ]
+
+    if MAdultId is not None:
+        MAdults = await GameApi.char.getMAdults(MAdultId)
+        handler_tasks += [
+            BGM_handler(MAdults, output_path),
+            Spine_handler(MAdultId, output_path),
+        ]
+
     await tqdm_asyncio.gather(*handler_tasks)
 
 
@@ -242,24 +253,26 @@ async def save_episode_res(
     force_download=False,
 ):
     GameApi = OtogiApi(proxy=http_proxy)
+    GameResApi = FetchGameRes(GameApi)
 
     MScenes = await GameApi.char.getMScenes(MSceneId)
     if MScenes is None:
         log.warning(f"角色需要 [{Description}]")
         return
 
-    MAdults = await GameApi.char.getMAdults(MAdultId)
-    if MAdults is None:
-        log.warning(f"获取MAdults[{MAdultId}]失败")
-        return
-
-    GameResApi = FetchGameRes(GameApi)
     await GameResApi.save_MScenes(
         MSceneId, output_path, update_output_path, force_download
     )
-    await GameResApi.save_MAdults(
-        MAdultId, output_path, update_output_path, force_download
-    )
+
+    if MAdultId is not None:
+        MAdults = await GameApi.char.getMAdults(MAdultId)
+        if MAdults is None:
+            log.warning(f"获取MAdults[{MAdultId}]失败")
+            return
+
+        await GameResApi.save_MAdults(
+            MAdultId, output_path, update_output_path, force_download
+        )
 
     await save_MScenes_MAdults_res(MSceneId, MAdultId, output_path, force_download)
 
@@ -365,8 +378,13 @@ async def check_game_update(
             MAdultId = episode["MAdultId"]
             Description = episode["Description"]
 
-            # 跳过非h章节
-            if MAdultId is None:
+            if MSceneId is None:
+                continue
+
+            if MAdultId == 0:
+                MAdultId = None
+
+            if not update_all_resources and MAdultId is None:
                 continue
 
             log.info(f"正在下载章节资源: [{MSceneId} - {MAdultId}]")

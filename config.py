@@ -27,7 +27,11 @@ if not update_config.has_section(section):
 if not update_config.has_option(section, "http_proxy"):
     update_config.set(section, "http_proxy", "")
 
+if not update_config.has_option(section, "update_all_resources"):
+    update_config.set(section, "update_all_resources", "0")
+
 http_proxy = update_config.get(section, "http_proxy", fallback="")
+update_all_resources = update_config.getboolean(section, "update_all_resources", fallback=False)
 
 update_server_path = Path("update_server.ini")
 if not update_server_path.exists():
@@ -38,3 +42,11 @@ update_server_config = SimpleConfig(update_server_path)
 resource_repo = update_server_config.get("github", "repo")
 resource_branch = update_server_config.get("github", "branch")
 resource_token = update_server_config.get("github", "token", fallback="")
+
+if not update_config.has_section("game"):
+    update_config.add_section("game")
+    update_config.set("game", "login_id", "")
+    update_config.set("game", "password", "")
+
+dmm_login_id = update_config.get("game", "login_id", fallback="")
+dmm_password = update_config.get("game", "password", fallback="")

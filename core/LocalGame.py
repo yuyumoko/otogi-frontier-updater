@@ -10,9 +10,11 @@ def get_path_ids(path: Path):
 
 class LocalGame:
     game_root: Path
+    no_character_ids: bool
 
-    def __init__(self, game_root: Path):
+    def __init__(self, game_root: Path, no_character_ids=False):
         self.game_root = game_root
+        self.no_character_ids = no_character_ids
 
     def validGamePath(self):
         homestand_exists = (self.game_root / CharacterIconPath).exists()
@@ -31,12 +33,14 @@ class LocalGame:
         ]
 
     def getCharacterIDS(self):
+        if self.no_character_ids:
+            return []
         return self.getCharacters()
 
     def getSpecial(self):
         return load_json(self.game_root / SpecialPath)
 
-    def saveDataSpecial(self, special_data, output_path: Path=None):
+    def saveDataSpecial(self, special_data, output_path: Path = None):
         path_root = output_path or self.game_root
         save_json(special_data, path_root / SpecialPath)
 

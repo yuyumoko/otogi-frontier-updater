@@ -68,12 +68,16 @@ def get_game_token(token):
     return token
 
 
-async def check_update(update_output_path: Path = None):
+async def check_update(update_output_path: Path = None, force=False):
     from core.CheckUpdate import check_game_update
 
     lg = require_game_path()
     if lg is None:
         return
+
+    if force:
+        log.info("强制检查游戏资源文件")
+        lg.no_character_ids = True
 
     if update_output_path is not None:
         update_output_path = lg.game_root / update_output_path
@@ -82,24 +86,32 @@ async def check_update(update_output_path: Path = None):
     log.info("更新完成")
 
 
-async def check_update_with_token():
-    print(
-        """
+token_login_print = """
 注意: *请先更新离线资源到最新后再选次选项*
 -------------------------------------------------------
 这个是游戏已经出的角色, 更新游戏资源又没有
 说明服务器资源并没有更新, 但你可以通过获取游戏token强制更新
 这样的话, 会缺少汉化文件
 更新后输出的更新包可以提供给管理员, 用于更新服务器资源
-
-token获取方法:
--------------------------------------------------------
-进入游戏后, 浏览器按F12 选择Network(网络)
-然后游戏内点击角色一览
-在控制台看到All并选择, 找到Headers里面的Token字段即可
           """
-    )
-    token = get_game_token()
+
+
+async def check_update_with_token(token=None, print_help=True):
+    if print_help:
+        print(
+            token_login_print
+            + """
+    token获取方法:
+    -------------------------------------------------------
+    进入游戏后, 浏览器按F12 选择Network(网络)
+    然后游戏内点击角色一览
+    在控制台看到All并选择, 找到Headers里面的Token字段即可
+            """
+        )
+
+    if token is None:
+        token = get_game_token()
+
     update_output_path = Path(
         f"更新数据/[{datetime.now().strftime('%Y-%m-%d')}] 服务器数据"
     )
@@ -109,6 +121,56 @@ token获取方法:
     setGameToken(token)
     await check_update(update_output_path)
     log.info(f"更新数据已保存到游戏目录下的: {update_output_path}")
+
+
+async def get_game_token_with_login_id(dmm_login_id, print_help=True):
+    if print_help:
+        print()
+
+
+async def check_update_with_login_id(only_get_token=False):
+    help_msg = """
+    使用账号:
+    -------------------------------------------------------
+    在当前目录下的 update_config.ini 文件中添加
+    [game]
+    login_id = 登录账号
+    password = 登录密码
+
+    添加好后重新运行程序即可
+    """
+
+    get_token_msg = """
+    -------------------------------------------------------
+    仅获取游戏的token, 可能使你现在其他端的游戏登录失效
+    其他端游戏重新登录后会导致次token失效
+    
+    请不要随意给别人, 程序也不会保存账号或者密码
+    """
+
+    if only_get_token:
+        print(token_login_print + help_msg)
+    else:
+        print(help_msg + get_token_msg)
+
+    from config import dmm_login_id, dmm_password, http_proxy
+    from core.DmmAuth import DmmAuth
+
+    if dmm_login_id is None or dmm_login_id == "":
+        log.error("请先设置账号密码")
+        return
+
+    log.info(f"正在登录...")
+    auth = DmmAuth(dmm_login_id, dmm_password, "otogi_f_r", http_proxy)
+    data = await auth.makeRequest("https://otogi-rest.otogi-frontier.com/api/DMM/auth")
+    await auth.session.close()
+    token = data["hash"]
+
+    if only_get_token:
+        log.info(f"游戏token: {token}")
+        return
+
+    await check_update_with_token(token, print_help=False)
 
 
 async def check_translation():
@@ -137,8 +199,20 @@ def run_check_update():
     asyncio.run(check_update())
 
 
+def run_check_update_force():
+    asyncio.run(check_update(force=True))
+
+
 def run_check_update_with_token():
     asyncio.run(check_update_with_token())
+
+
+def run_check_update_with_login_id():
+    asyncio.run(check_update_with_login_id())
+
+
+def run_only_get_token_with_login_id():
+    asyncio.run(check_update_with_login_id(only_get_token=True))
 
 
 def run_check_translation():
@@ -172,15 +246,21 @@ def show_menu():
         Menu(
             title=f"{__title__} v{__version__} - {__description__} (第一次需要选择游戏目录)",
             options={
-                run_check_update: "1.更新游戏缺少的资源文件",
-                run_check_translation: "2.更新游戏汉化文件",
-                run_install_client: "3.更新游戏html客户端 (首次需要更新, 为了支持更新的动画)",
-                run_check_update_with_token: "4.使用游戏的token更新资源",
-                run_game_web_server: "5.我只想启动游戏",
+                run_check_update: "1.更新文件",
+                run_check_update_force: "2.强制更新所有文件(时间可能较长)",
+                run_check_translation: "3.更新汉化",
+                run_install_client: "4.更新游戏html客户端 (首次需要更新, 为了支持更新的动画)",
+                run_only_get_token_with_login_id: "5.获取游戏token",
+                run_check_update_with_token: "6.输入token更新文件",
+                run_check_update_with_login_id: "7.使用账号更新文件",
+                run_game_web_server: "8.我只想启动游戏",
             },
         ).show()
     except Exception as e:
-        log.exception(e)
+        if "Expected string or C-contiguous bytes-like object" in repr(e):
+            log.error("请获取 update_server.ini 文件到运行目录下, token不是游戏token")
+        else:
+            log.exception(e)
     finally:
         os.system("pause")
 
@@ -222,7 +302,7 @@ if __name__ == "__main__":
         action="store_true",
         help="安装客户端",
     )
-    
+
     parser.add_argument(
         "-w",
         "--web-server",
@@ -243,7 +323,7 @@ if __name__ == "__main__":
 
     if args.install_client:
         run_install_client()
-        
+
     if args.web_server:
         run_game_web_server()
 
