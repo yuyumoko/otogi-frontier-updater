@@ -10,4 +10,6 @@
 - 可更新全剧情, 需要在 `update_config.ini` 文件中配置 `update_all_resources` 为 `true` 或者 `1`
 - 新增使用账号登录或者获取token功能
 
+- 修复更新汉化出现的错误
+
 ```

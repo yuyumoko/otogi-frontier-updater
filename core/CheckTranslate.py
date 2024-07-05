@@ -39,6 +39,9 @@ async def check_translate(lg: LocalGame, output_path: Path = None, download_num=
     # fmt: off
     diff_MSceneIds = ids_difference(localMSceneIds, res_server.hash_data["typeadv"]["MScenes_TW"].keys())
     diff_MAdultIds = ids_difference(localMAdultIds, res_server.hash_data["jsoncn"].keys())
+    
+    if "MStory" in diff_MSceneIds:
+        diff_MSceneIds.remove("MStory")
     # fmt: on
 
     log.info(f"新增场景：{len(diff_MSceneIds)}")
