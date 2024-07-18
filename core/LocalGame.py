@@ -1,7 +1,13 @@
 from pathlib import Path
 
 from utils.helper import load_json, save_json
-from FileDataPath import CharacterIconPath, SpecialPath, ZH_MScenesPath, ZH_MAdultsPath
+from FileDataPath import (
+    CharacterIconPath,
+    SpecialPath,
+    ZH_MScenesPath,
+    ZH_MAdultsPath,
+    VieableEpisodeListPath,
+)
 
 
 def get_path_ids(path: Path):
@@ -20,6 +26,27 @@ class LocalGame:
         homestand_exists = (self.game_root / CharacterIconPath).exists()
         special_exists = (self.game_root / SpecialPath).exists()
         return homestand_exists and special_exists
+
+    def join(self, *args):
+        return self.game_root / Path(*args)
+
+    def remove_icon(self, character_id):
+        path = self.game_root / CharacterIconPath / f"{character_id}.png"
+        if path.exists():
+            path.unlink()
+
+    def find_MSceneId_or_MAdultId(self, id):
+        for file in (self.game_root / VieableEpisodeListPath).iterdir():
+            if not file.name.isdigit():
+                continue
+
+            json_data = load_json(file)
+            episodes = (
+                json_data["Episodes"] if isinstance(json_data, dict) else json_data
+            )
+            for episode in episodes:
+                if episode["MSceneId"] == id or episode["MAdultId"] == id:
+                    return int(file.stem)
 
     def getCharacters(self):
         exclude_ids = [

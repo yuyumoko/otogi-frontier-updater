@@ -6,6 +6,7 @@ import argparse
 
 from datetime import datetime
 from pathlib import Path
+from tqdm import tqdm
 
 from __version__ import __title__, __version__, __description__
 
@@ -241,6 +242,47 @@ def run_game_web_server(host="0.0.0.0", port=8182):
     web.run_app(app, host=host, port=port)
 
 
+async def clear_dir():
+    lg = require_game_path()
+    if lg is None:
+        return
+
+    check_paths = [r"chara\still", r"othersounds\still", r"chara\homestand"]
+    del_ids = []
+
+    for check_root in (lg.join(x) for x in check_paths):
+        pbar = tqdm(check_root.iterdir(), desc=f"扫描: {check_root.name}")
+
+        for path in pbar:
+            if not path.is_dir():
+                continue
+
+            files = os.listdir(path)
+            if len(files) == 0 and path.name.isdigit():
+                path.rmdir()
+                del_ids.append(int(path.name))
+                log.info(f"清除: {path.name}")
+
+    if len(del_ids) > 0:
+        local_ids = lg.getCharacters()
+        for del_id in del_ids:
+            if del_id in local_ids:
+                lg.remove_icon(del_id)
+                log.info(f"删除图标: {del_id}")
+            else:
+                if icon_id := lg.find_MSceneId_or_MAdultId(del_id):
+                    lg.remove_icon(icon_id)
+                    log.info(f"删除图标: {del_id}")
+                else:
+                    log.warning(f"找不到图标: {del_id}, 可能是不存在的id")
+
+    log.info(f"清除完成, 请重新运行更新")
+
+
+def run_clear_dir():
+    asyncio.run(clear_dir())
+
+
 def show_menu():
     try:
         Menu(
@@ -249,16 +291,19 @@ def show_menu():
                 run_check_update: "1.更新文件",
                 run_check_update_force: "2.强制更新所有文件(时间可能较长)",
                 run_check_translation: "3.更新汉化",
-                run_install_client: "4.更新游戏html客户端 (首次需要更新, 为了支持更新的动画)",
-                run_only_get_token_with_login_id: "5.获取游戏token",
-                run_check_update_with_token: "6.输入token更新文件",
-                run_check_update_with_login_id: "7.使用账号更新文件",
-                run_game_web_server: "8.我只想启动游戏",
+                run_clear_dir: "4.更新异常退出时, 清除缓存",
+                run_install_client: "5.更新游戏html客户端 (首次需要更新, 为了支持更新的动画)",
+                run_only_get_token_with_login_id: "6.获取游戏token",
+                run_check_update_with_token: "7.输入token更新文件",
+                run_check_update_with_login_id: "8.使用账号更新文件",
+                run_game_web_server: "9.我只想启动游戏",
             },
         ).show()
     except Exception as e:
         if "Expected string or C-contiguous bytes-like object" in repr(e):
-            log.error("请获取 update_server.ini 文件到运行目录下, token不是游戏token")
+            log.error(
+                "连接github失败\n1.请获取 update_server.ini 文件到运行目录下\n2.可能是github抽了, 请重试"
+            )
         else:
             log.exception(e)
     finally:

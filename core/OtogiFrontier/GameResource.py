@@ -34,6 +34,10 @@ class GameResource(HTTPSessionApi):
             url, chunk_handler=chunk_handler, chunk_size=chunk_size
         )
         return res.data
+    async def GetAssetBundlePatch(self, AssetsVersion):
+        # https://web-assets.otogi-frontier.com/prodassets/GeneralWebGL/AssetBundlePatch/FullList/464_ad.csv
+        url = f"https://web-assets.otogi-frontier.com/prodassets/GeneralWebGL/AssetBundlePatch/FullList/{AssetsVersion}_ad.csv"
+        return (await self.request_raw_data(url)).data
 
     async def getCharacterSpine(self, id):
         url = f"chara/spine/{id}"
