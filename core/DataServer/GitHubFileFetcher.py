@@ -6,7 +6,7 @@ from aiohttp import ClientSession, ClientTimeout
 from tenacity import retry, stop_after_attempt, wait_fixed, RetryCallState, _utils
 
 from utils import log
-from config import http_proxy
+from config import http_proxy, use_github_mirror
 
 
 def retry_log(retry_state: "RetryCallState"):
@@ -29,6 +29,9 @@ class GitHubFileFetcher:
         repo_path_format = f"{self.repo}/{self.branch}/"
 
         if not self.proxy or (self.http_proxy is not None and self.http_proxy != ""):
+            return base_url + repo_path_format
+        
+        if not use_github_mirror:
             return base_url + repo_path_format
 
         if self.default_github_proxy is not None:

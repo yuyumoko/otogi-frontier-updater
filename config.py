@@ -30,8 +30,13 @@ if not update_config.has_option(section, "http_proxy"):
 if not update_config.has_option(section, "update_all_resources"):
     update_config.set(section, "update_all_resources", "0")
 
+if not update_config.has_option(section, "use_github_mirror"):
+    update_config.set(section, "use_github_mirror", "1")
+
 http_proxy = update_config.get(section, "http_proxy", fallback="")
 update_all_resources = update_config.getboolean(section, "update_all_resources", fallback=False)
+
+use_github_mirror = update_config.getboolean(section, "use_github_mirror", fallback=True)
 
 update_server_path = Path("update_server.ini")
 if not update_server_path.exists():
