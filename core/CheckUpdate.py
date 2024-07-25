@@ -302,7 +302,7 @@ async def save_specials(
             continue
 
         if is_local_episode(special):
-            pbar.set_description(f"报酬已获取 [{title}]")
+            # pbar.set_description(f"报酬已获取 [{title}]")
             continue
 
         res_special.append(special)
@@ -406,10 +406,10 @@ async def check_game_update(
         ]
         await tqdm_asyncio.gather(*request_res_task)
 
-    if update_output_path is not None:
-        log.info(f"正在保存更新数据")
-        VieableEpisodeFile = update_output_path / VieableEpisodeListPath / str(char_id)
-        save_json(char_episodes["Episodes"], VieableEpisodeFile)
+        if update_output_path is not None:
+            log.info(f"正在保存更新数据")
+            VieableEpisodeFile = update_output_path / VieableEpisodeListPath / str(char_id)
+            save_json(char_episodes["Episodes"], VieableEpisodeFile)
 
-        if len(res_special) != 0:
-            lg.saveDataSpecial(local_special, update_output_path)
+            if len(res_special) != 0:
+                lg.saveDataSpecial(local_special, update_output_path)
