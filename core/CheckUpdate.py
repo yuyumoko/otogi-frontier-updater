@@ -238,6 +238,7 @@ async def save_MScenes_MAdults_res(
             Voice_handler(MSceneId, MAdultId, output_path),
         ]
 
+    MAdults = None
     if MAdultId is not None:
         handler_tasks += [Spine_handler(MAdultId, output_path)]
         MAdults = await GameApi.char.getMAdults(MAdultId)
@@ -245,6 +246,8 @@ async def save_MScenes_MAdults_res(
             handler_tasks += [BGM_handler(MAdults, output_path)]
 
     await tqdm_asyncio.gather(*handler_tasks)
+
+    return MScenes, MAdults
 
 
 async def save_episode_res(
@@ -281,8 +284,13 @@ async def save_episode_res(
 
 
 async def save_specials(
-    GameApi: OtogiApi, local_special_episodes, output_path: Path, force_download=False
+    GameApi: OtogiApi,
+    local_special_episodes,
+    output_path: Path,
+    update_output_path: Path,
+    force_download=False,
 ):
+    GameResApi = FetchGameRes(GameApi)
 
     def is_local_episode(episode):
         return episode["MSceneAdultFlowId"] in [
@@ -302,12 +310,25 @@ async def save_specials(
             continue
 
         if is_local_episode(special):
-            # pbar.set_description(f"报酬已获取 [{title}]")
             continue
 
         res_special.append(special)
 
-        await save_MScenes_MAdults_res(MSceneId, MAdultId, output_path, force_download)
+        MScenes, MAdults = await save_MScenes_MAdults_res(
+            MSceneId, MAdultId, output_path, force_download
+        )
+
+        if MScenes is not None:
+            await GameResApi.save_MScenes(
+                MSceneId, output_path, update_output_path, force_download
+            )
+            
+        if MAdults is not None:
+            await GameResApi.save_MAdults(
+                MAdultId, output_path, update_output_path, force_download
+            )
+            
+
     return res_special
 
 
@@ -350,7 +371,7 @@ async def check_game_update(
     local_special = lg.getSpecial()
     local_special_Episodes = local_special["Episodes"]
     res_special = await save_specials(
-        GameApi, local_special_Episodes, output_path, force_download
+        GameApi, local_special_Episodes, output_path, update_output_path, force_download
     )
     if len(res_special) != 0:
         local_special["Episodes"] += res_special
@@ -408,7 +429,9 @@ async def check_game_update(
 
         if update_output_path is not None:
             log.info(f"正在保存更新数据")
-            VieableEpisodeFile = update_output_path / VieableEpisodeListPath / str(char_id)
+            VieableEpisodeFile = (
+                update_output_path / VieableEpisodeListPath / str(char_id)
+            )
             save_json(char_episodes["Episodes"], VieableEpisodeFile)
 
             if len(res_special) != 0:

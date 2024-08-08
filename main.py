@@ -242,11 +242,38 @@ def run_game_web_server(host="0.0.0.0", port=8182):
     web.run_app(app, host=host, port=port)
 
 
+async def clear_special(lg: LocalGame):
+    from FileDataPath import (
+        MScenesPath,
+        MAdultsPath,
+    )
+
+    local_special = lg.getSpecial()
+    local_special_Episodes = local_special["Episodes"]
+    MScenes_path = lg.game_root / MScenesPath
+    MAdults_path = lg.game_root / MAdultsPath
+    new_special_Episodes = []
+    for episode in local_special_Episodes:
+        if MSceneId := episode.get("MSceneId"):
+            MScenes_file = MScenes_path / str(MSceneId)
+            if not MScenes_file.exists():
+                continue
+        
+        if MAdultId := episode.get("MAdultId"):
+            MAdultId_file = MAdults_path / str(MAdultId)
+            if not MAdultId_file.exists():
+                continue 
+        new_special_Episodes.append(episode)
+        
+    local_special["Episodes"] = new_special_Episodes
+    lg.saveDataSpecial(local_special)
+    
+
 async def clear_dir():
     lg = require_game_path()
     if lg is None:
         return
-
+    
     check_paths = [r"chara\still", r"othersounds\still", r"chara\homestand"]
     del_ids = []
 
@@ -276,6 +303,7 @@ async def clear_dir():
                 else:
                     log.warning(f"找不到图标: {del_id}, 可能是不存在的id")
 
+    await clear_special(lg)
     log.info(f"清除完成, 请重新运行更新")
 
 
@@ -291,7 +319,7 @@ def show_menu():
                 run_check_update: "1.更新文件",
                 run_check_update_force: "2.强制更新所有文件(时间可能较长)",
                 run_check_translation: "3.更新汉化",
-                run_clear_dir: "4.更新异常退出时, 清除缓存",
+                run_clear_dir: "4.修复游戏文件缺失问题, 包括异常退出, 报酬剧情缺失",
                 run_install_client: "5.更新游戏html客户端 (首次需要更新, 为了支持更新的动画)",
                 run_only_get_token_with_login_id: "6.获取游戏token",
                 run_check_update_with_token: "7.输入token更新文件",
