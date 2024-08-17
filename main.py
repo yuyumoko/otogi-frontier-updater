@@ -4,6 +4,8 @@ import sys
 import asyncio
 import argparse
 
+import ujson as json
+
 from datetime import datetime
 from pathlib import Path
 from tqdm import tqdm
@@ -200,8 +202,8 @@ def run_check_update():
     asyncio.run(check_update())
 
 
-def run_check_update_force():
-    asyncio.run(check_update(force=True))
+# def run_check_update_force():
+#     asyncio.run(check_update(force=True))
 
 
 def run_check_update_with_token():
@@ -247,6 +249,14 @@ async def clear_special(lg: LocalGame):
         MScenesPath,
         MAdultsPath,
     )
+    
+    def has_break(json_file: Path):
+        try:
+            with json_file.open("r", encoding="utf-8") as f:
+                json.load(f)
+                return False
+        except json.JSONDecodeError:
+            return True
 
     local_special = lg.getSpecial()
     local_special_Episodes = local_special["Episodes"]
@@ -256,12 +266,12 @@ async def clear_special(lg: LocalGame):
     for episode in local_special_Episodes:
         if MSceneId := episode.get("MSceneId"):
             MScenes_file = MScenes_path / str(MSceneId)
-            if not MScenes_file.exists():
+            if not MScenes_file.exists() and not has_break(MScenes_file):
                 continue
         
         if MAdultId := episode.get("MAdultId"):
             MAdultId_file = MAdults_path / str(MAdultId)
-            if not MAdultId_file.exists():
+            if not MAdultId_file.exists() and not has_break(MAdultId_file):
                 continue 
         new_special_Episodes.append(episode)
         
@@ -317,14 +327,13 @@ def show_menu():
             title=f"{__title__} v{__version__} - {__description__} (第一次需要选择游戏目录)",
             options={
                 run_check_update: "1.更新文件",
-                run_check_update_force: "2.强制更新所有文件(时间可能较长)",
-                run_check_translation: "3.更新汉化",
-                run_clear_dir: "4.修复游戏文件缺失问题, 包括异常退出, 报酬剧情缺失",
-                run_install_client: "5.更新游戏html客户端 (首次需要更新, 为了支持更新的动画)",
-                run_only_get_token_with_login_id: "6.获取游戏token",
-                run_check_update_with_token: "7.输入token更新文件",
-                run_check_update_with_login_id: "8.使用账号更新文件",
-                run_game_web_server: "9.我只想启动游戏",
+                run_check_translation: "2.更新汉化",
+                run_clear_dir: "3.修复游戏文件缺失问题, 包括异常退出, 报酬剧情缺失",
+                run_install_client: "4.更新游戏html客户端 (首次需要更新, 为了支持更新的动画)",
+                run_only_get_token_with_login_id: "5.获取游戏token",
+                run_check_update_with_token: "6.输入token更新文件",
+                run_check_update_with_login_id: "7.使用账号更新文件",
+                run_game_web_server: "8.我只想启动游戏",
             },
         ).show()
     except Exception as e:

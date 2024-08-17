@@ -1,4 +1,5 @@
 import UnityPy
+import requests
 import ujson as json
 from pathlib import Path
 from typing import TypeVar
@@ -36,3 +37,15 @@ def save_json(data, path: Path):
 
 def ids_difference(old_ids, new_ids):
     return list(set(new_ids).difference(set(old_ids)))
+
+
+def check_proxy(proxy_url):
+    try:
+        requests.adapters.DEFAULT_RETRIES = 3
+        res = requests.get(
+            url="http://icanhazip.com/", timeout=2, proxies={"http": proxy_url}
+        )
+        proxyIP = res.text
+        return proxyIP
+    except:
+        raise Exception("代理IP无效! : " + proxy_url)

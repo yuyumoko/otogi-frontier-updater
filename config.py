@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from utils import SimpleConfig, log
+from utils import SimpleConfig, log, check_proxy
 
 Game = {"token": ""}
 
@@ -34,6 +34,13 @@ if not update_config.has_option(section, "use_github_mirror"):
     update_config.set(section, "use_github_mirror", "1")
 
 http_proxy = update_config.get(section, "http_proxy", fallback="")
+
+if http_proxy != "":
+    log.info(f"正在检查代理可用性: {http_proxy}")
+    if not check_proxy(http_proxy):
+        log.error("代理不可用")
+        raise Exception("代理不可用")
+
 update_all_resources = update_config.getboolean(section, "update_all_resources", fallback=False)
 
 use_github_mirror = update_config.getboolean(section, "use_github_mirror", fallback=True)
