@@ -108,6 +108,8 @@ class GameResource(HTTPSessionApi):
     async def getAssetsFromPath(self, url_path: str) -> bytes:
         has_encrypt = url_path.startswith("chara/still/")
         data = (await self.request_raw_data(url_path)).data
+        if data is None:
+            return None
         return decrypt(data, AES_KEY, AES_IV) if has_encrypt else data
 
     async def ExtractAsset(self, url_path: str, out_path: Path) -> List[int]:
