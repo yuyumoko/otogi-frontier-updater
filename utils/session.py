@@ -147,7 +147,12 @@ class HTTPSessionApi:
     ) -> RespondBase:
         """发起HTTP请求并获取数据"""
         host = host or self.host
-        request_url = host + path
+        
+        if not path.startswith("http"):
+            request_url = host + path
+        else:
+            request_url = path
+        
         try:
             headers = headers or {}
             headers.update(self.request_headers or {})

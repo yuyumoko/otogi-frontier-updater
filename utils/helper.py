@@ -49,3 +49,18 @@ def check_proxy(proxy_url):
         return proxyIP
     except:
         raise Exception("代理IP无效! : " + proxy_url)
+
+
+def parse_csv_from_string(csv_content: str):
+    lines = csv_content.strip().splitlines()
+
+    for line in lines[1:]:
+        parts = line.strip().split(",")
+
+        if len(parts) == 3:
+            url_path = parts[0]
+            md5 = parts[1]
+            size = int(parts[2])
+            yield (url_path, md5, size)
+        else:
+            print(f"Unexpected line format: {line}")

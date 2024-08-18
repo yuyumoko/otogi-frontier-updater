@@ -22,6 +22,7 @@ from core.LocalGame import LocalGame
 from config import setGameToken
 
 from tkinter import filedialog
+from tqdm.asyncio import tqdm_asyncio
 
 
 def input_fn(msg):
@@ -126,13 +127,7 @@ async def check_update_with_token(token=None, print_help=True):
     log.info(f"更新数据已保存到游戏目录下的: {update_output_path}")
 
 
-async def get_game_token_with_login_id(dmm_login_id, print_help=True):
-    if print_help:
-        print()
-
-
-async def check_update_with_login_id(only_get_token=False):
-    help_msg = """
+login_help_msg = """
     使用账号:
     -------------------------------------------------------
     在当前目录下的 update_config.ini 文件中添加
@@ -141,20 +136,22 @@ async def check_update_with_login_id(only_get_token=False):
     password = 登录密码
 
     添加好后重新运行程序即可
+    * 请不要随意给别人 update_config.ini 文件
     """
+
+
+async def check_update_with_login_id(only_get_token=False):
 
     get_token_msg = """
     -------------------------------------------------------
     仅获取游戏的token, 可能使你现在其他端的游戏登录失效
     其他端游戏重新登录后会导致次token失效
-    
-    请不要随意给别人, 程序也不会保存账号或者密码
     """
 
     if only_get_token:
-        print(token_login_print + help_msg)
+        print(token_login_print + login_help_msg)
     else:
-        print(help_msg + get_token_msg)
+        print(login_help_msg + get_token_msg)
 
     from config import dmm_login_id, dmm_password, http_proxy
     from core.DmmAuth import DmmAuth
@@ -167,7 +164,7 @@ async def check_update_with_login_id(only_get_token=False):
     auth = DmmAuth(dmm_login_id, dmm_password, "otogi_f_r", http_proxy)
     data = await auth.makeRequest("https://otogi-rest.otogi-frontier.com/api/DMM/auth")
     await auth.session.close()
-    token = data["hash"]
+    token = data["body"]["hash"]
 
     if only_get_token:
         log.info(f"游戏token: {token}")
@@ -249,7 +246,7 @@ async def clear_special(lg: LocalGame):
         MScenesPath,
         MAdultsPath,
     )
-    
+
     def has_break(json_file: Path):
         try:
             with json_file.open("r", encoding="utf-8") as f:
@@ -268,22 +265,22 @@ async def clear_special(lg: LocalGame):
             MScenes_file = MScenes_path / str(MSceneId)
             if not MScenes_file.exists() and not has_break(MScenes_file):
                 continue
-        
+
         if MAdultId := episode.get("MAdultId"):
             MAdultId_file = MAdults_path / str(MAdultId)
             if not MAdultId_file.exists() and not has_break(MAdultId_file):
-                continue 
+                continue
         new_special_Episodes.append(episode)
-        
+
     local_special["Episodes"] = new_special_Episodes
     lg.saveDataSpecial(local_special)
-    
+
 
 async def clear_dir():
     lg = require_game_path()
     if lg is None:
         return
-    
+
     check_paths = [r"chara\still", r"othersounds\still", r"chara\homestand"]
     del_ids = []
 
@@ -321,6 +318,56 @@ def run_clear_dir():
     asyncio.run(clear_dir())
 
 
+async def download_all_assets():
+    lg = require_game_path()
+    if lg is None:
+        return
+
+    from config import dmm_login_id, dmm_password, http_proxy
+    from core.DmmAuth import DmmAuth
+    from core.OtogiFrontier import OtogiApi
+    from utils import parse_csv_from_string
+
+    if dmm_login_id is None or dmm_login_id == "":
+        log.error("请先设置账号密码")
+        print(login_help_msg)
+        return
+
+    log.info(f"正在登录...")
+    auth = DmmAuth(dmm_login_id, dmm_password, "otogi_f_r", http_proxy)
+    data = await auth.makeRequest("https://otogi-rest.otogi-frontier.com/api/DMM/auth")
+    await auth.session.close()
+
+    AssetsVersion = data["headers"]["X-OtogiSp-AssetsVersion"]
+
+    GameApi = OtogiApi(proxy=http_proxy)
+
+    log.info(f"正在获取AssetBundle列表 版本号:[{AssetsVersion}]")
+    AssetBundlePatch = await GameApi.resource.GetAssetBundlePatch(AssetsVersion)
+
+    out_path = lg.game_root / "游戏资源" / AssetsVersion
+    out_path.mkdir(parents=True, exist_ok=True)
+    log.info(f"正在下载到游戏目录下的 游戏资源/{AssetsVersion} 目录")
+
+    async def process_asset(semaphore, url_path, out_path):
+        async with semaphore:
+            await OtogiApi(proxy=http_proxy).resource.ExtractAsset(url_path, out_path)
+
+    semaphore = asyncio.Semaphore(30)
+    tasks = []
+
+    for url_path, md5, size in parse_csv_from_string(AssetBundlePatch.decode()):
+        task = process_asset(semaphore, url_path, out_path)
+        tasks.append(task)
+
+    await tqdm_asyncio.gather(*tasks)
+    log.info(f"下载完成, 请到 游戏资源/{AssetsVersion} 查看")
+
+
+def run_download_all_assets():
+    asyncio.run(download_all_assets())
+
+
 def show_menu():
     try:
         Menu(
@@ -333,7 +380,8 @@ def show_menu():
                 run_only_get_token_with_login_id: "5.获取游戏token",
                 run_check_update_with_token: "6.输入token更新文件",
                 run_check_update_with_login_id: "7.使用账号更新文件",
-                run_game_web_server: "8.我只想启动游戏",
+                run_download_all_assets: "8.下载所有素材资源(仅供获取素材, 并不会更新游戏文件)",
+                run_game_web_server: "999.我只想启动游戏",
             },
         ).show()
     except Exception as e:

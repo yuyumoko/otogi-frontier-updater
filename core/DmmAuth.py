@@ -104,7 +104,8 @@ class DmmAuth:
             data = json.loads(text[27:])
             data = next(iter(data.values()))
 
-            return json.loads(data["body"])
+            data["body"] = json.loads(data["body"])
+            return data
 
 
 async def run_test():
