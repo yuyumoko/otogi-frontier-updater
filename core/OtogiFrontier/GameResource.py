@@ -112,6 +112,9 @@ class GameResource(HTTPSessionApi):
 
     async def ExtractAsset(self, url_path: str, out_path: Path) -> List[int]:
         raw_data = await self.getAssetsFromPath(url_path)
+        if raw_data is None:
+            return []
+        
         file_path = out_path / url_path
         file_path.parent.mkdir(parents=True, exist_ok=True)
         with file_path.open("wb") as f:

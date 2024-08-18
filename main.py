@@ -355,11 +355,11 @@ async def download_all_assets():
 
     semaphore = asyncio.Semaphore(30)
     tasks = []
+    AssetBundlePatchList = list(parse_csv_from_string(AssetBundlePatch.decode()))
 
-    for url_path, md5, size in parse_csv_from_string(AssetBundlePatch.decode()):
+    for url_path, md5, size in tqdm(AssetBundlePatchList, desc="初始化"):
         file_path = out_path / url_path
         if file_path.exists() and file_path.stat().st_size == size:
-            log.info(f"跳过: {url_path}")
             continue
         
         task = process_asset(semaphore, url_path, out_path)
