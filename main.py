@@ -345,9 +345,9 @@ async def download_all_assets():
     log.info(f"正在获取AssetBundle列表 版本号:[{AssetsVersion}]")
     AssetBundlePatch = await GameApi.resource.GetAssetBundlePatch(AssetsVersion)
 
-    out_path = lg.game_root / "游戏资源" / AssetsVersion
+    out_path = lg.game_root / "游戏资源"
     out_path.mkdir(parents=True, exist_ok=True)
-    log.info(f"正在下载到游戏目录下的 游戏资源/{AssetsVersion} 目录")
+    log.info(f"正在下载到游戏目录下的 游戏资源 目录")
 
     async def process_asset(semaphore, url_path, out_path):
         async with semaphore:
@@ -357,11 +357,16 @@ async def download_all_assets():
     tasks = []
 
     for url_path, md5, size in parse_csv_from_string(AssetBundlePatch.decode()):
+        file_path = out_path / url_path
+        if file_path.exists() and file_path.stat().st_size == size:
+            log.info(f"跳过: {url_path}")
+            continue
+        
         task = process_asset(semaphore, url_path, out_path)
         tasks.append(task)
 
     await tqdm_asyncio.gather(*tasks)
-    log.info(f"下载完成, 请到 游戏资源/{AssetsVersion} 查看")
+    log.info(f"下载完成, 请到 游戏资源 查看")
 
 
 def run_download_all_assets():
