@@ -43,6 +43,11 @@ class GameResource(HTTPSessionApi):
         url = f"chara_icon"
         res = await self.request_raw_data(url, method=HTTPMethod.OPTIONS)
         return int(res.headers.get("Content-Length", 0))
+    
+    async def getAssetsLastVersion(self):
+        url = f"https://otogi-rest.otogi-frontier.com/api/now"
+        res = await self.request_raw_data(url, method=HTTPMethod.OPTIONS)
+        return int(res.headers.get("X-OtogiSp-AssetsVersion", 0))
 
     async def getAllCharacterIconData(self, chunk_handler=None, chunk_size=1024):
         # https://web-assets.otogi-frontier.com/prodassets//GeneralWebGL/Assets/item_icon

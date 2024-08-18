@@ -323,24 +323,13 @@ async def download_all_assets():
     if lg is None:
         return
 
-    from config import dmm_login_id, dmm_password, http_proxy
-    from core.DmmAuth import DmmAuth
+    from config import http_proxy
     from core.OtogiFrontier import OtogiApi
     from utils import parse_csv_from_string
 
-    if dmm_login_id is None or dmm_login_id == "":
-        log.error("请先设置账号密码")
-        print(login_help_msg)
-        return
-
-    log.info(f"正在登录...")
-    auth = DmmAuth(dmm_login_id, dmm_password, "otogi_f_r", http_proxy)
-    data = await auth.makeRequest("https://otogi-rest.otogi-frontier.com/api/DMM/auth")
-    await auth.session.close()
-
-    AssetsVersion = data["headers"]["X-OtogiSp-AssetsVersion"]
-
     GameApi = OtogiApi(proxy=http_proxy)
+
+    AssetsVersion = await GameApi.resource.getAssetsLastVersion()
 
     log.info(f"正在获取AssetBundle列表 版本号:[{AssetsVersion}]")
     AssetBundlePatch = await GameApi.resource.GetAssetBundlePatch(AssetsVersion)
@@ -361,7 +350,7 @@ async def download_all_assets():
         file_path = out_path / url_path
         if file_path.exists() and file_path.stat().st_size == size:
             continue
-        
+
         task = process_asset(semaphore, url_path, out_path)
         tasks.append(task)
 
