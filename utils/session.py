@@ -99,7 +99,7 @@ class HTTPSessionApi:
         await self._session._session.close()
 
     @retry(
-        stop=stop_after_attempt(3), wait=wait_fixed(1), before=retry_log, reraise=True
+        stop=stop_after_attempt(5), wait=wait_fixed(1), before=retry_log, reraise=True
     )
     async def request_json(
         self, path: str, method: HTTPMethod = None, **kwargs
@@ -107,7 +107,10 @@ class HTTPSessionApi:
         if method is None:
             method = HTTPMethod.GET
         return await self.__request__(method, path, **kwargs)
-
+    
+    @retry(
+        stop=stop_after_attempt(5), wait=wait_fixed(1), before=retry_log, reraise=True
+    )
     async def request_raw_data(
         self,
         path: str,
