@@ -254,6 +254,8 @@ async def clear_special(lg: LocalGame):
                 return False
         except json.JSONDecodeError:
             return True
+        except FileNotFoundError:
+            return True
 
     local_special = lg.getSpecial()
     local_special_Episodes = local_special["Episodes"]
