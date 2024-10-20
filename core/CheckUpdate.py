@@ -59,7 +59,8 @@ async def init_chara_icon_cache(GameApi: OtogiApi):
                 dl_info["length"] == dl_info["completedLength"]
                 and dl_info["completedLength"] != "0"
             ):
-                break
+                if not CharaIconPath.with_suffix(".aria2").exists():
+                    break
 
         # chara_icon_file_f = CharaIconPath.open("wb+")
         # def chunk_handler(chunk):
