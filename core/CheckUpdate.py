@@ -36,14 +36,17 @@ def save_unity_voice(env: UnityEnv, output_path):
 async def init_chara_icon_cache(GameApi: OtogiApi):
     all_char_icon_size = await GameApi.resource.getAllCharacterIconDataSize()
     log.info(f"图标大小: [{file_size_format(all_char_icon_size)}]")
+    
+    aria2_config_file = CharaIconPath.with_suffix(".aria2")
+    if aria2_config_file.exists():
+        aria2_config_file.unlink()
+        CharaIconPath.unlink()
+    
     if not CharaIconPath.exists() or CharaIconPath.stat().st_size != all_char_icon_size:
         aria2c = Aria2c(CharaIconPath.parent)
         dl_url = "https://web-assets.otogi-frontier.com/prodassets//GeneralWebGL/Assets/chara_icon"
         gid = aria2c.download(dl_url, "chara_icon")
-        aria2_config_file = CharaIconPath.with_suffix(".aria2")
-        if aria2_config_file.exists():
-            aria2_config_file.unlink()
-            CharaIconPath.unlink()
+        
 
         dl_bar = tqdm(
             total=all_char_icon_size,
