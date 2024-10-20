@@ -40,6 +40,10 @@ async def init_chara_icon_cache(GameApi: OtogiApi):
         aria2c = Aria2c(CharaIconPath.parent)
         dl_url = "https://web-assets.otogi-frontier.com/prodassets//GeneralWebGL/Assets/chara_icon"
         gid = aria2c.download(dl_url, "chara_icon")
+        aria2_config_file = CharaIconPath.with_suffix(".aria2")
+        if aria2_config_file.exists():
+            aria2_config_file.unlink()
+            CharaIconPath.unlink()
 
         dl_bar = tqdm(
             total=all_char_icon_size,
@@ -59,7 +63,7 @@ async def init_chara_icon_cache(GameApi: OtogiApi):
                 dl_info["length"] == dl_info["completedLength"]
                 and dl_info["completedLength"] != "0"
             ):
-                if not CharaIconPath.with_suffix(".aria2").exists():
+                if not aria2_config_file.exists():
                     break
 
         # chara_icon_file_f = CharaIconPath.open("wb+")
