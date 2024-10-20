@@ -8,3 +8,5 @@ requests
 aiohttp
 pycryptodome
 UnityPy
+aria2p
+psutil

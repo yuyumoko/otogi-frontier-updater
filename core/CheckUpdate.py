@@ -7,7 +7,7 @@ from pathlib import Path
 from tqdm import tqdm
 from tqdm.asyncio import tqdm_asyncio
 
-from utils import log, save_json, file_size_format, UnityEnv
+from utils import log, save_json, file_size_format, UnityEnv, Aria2c
 from config import http_proxy, CharaIconPath, update_all_resources
 from FileDataPath import (
     MasterDataPath,
@@ -37,20 +37,37 @@ async def init_chara_icon_cache(GameApi: OtogiApi):
     all_char_icon_size = await GameApi.resource.getAllCharacterIconDataSize()
     log.info(f"图标大小: [{file_size_format(all_char_icon_size)}]")
     if not CharaIconPath.exists() or CharaIconPath.stat().st_size != all_char_icon_size:
+        aria2c = Aria2c(CharaIconPath.parent)
+        dl_url = "https://web-assets.otogi-frontier.com/prodassets//GeneralWebGL/Assets/chara_icon"
+        gid = aria2c.download(dl_url, "chara_icon")
+
         dl_bar = tqdm(
             total=all_char_icon_size,
             desc="更新缓存图标数据中",
             unit="B",
             unit_scale=True,
         )
-        chara_icon_file_f = CharaIconPath.open("wb+")
 
-        def chunk_handler(chunk):
-            dl_bar.update(len(chunk))
-            chara_icon_file_f.write(chunk)
+        while True:
+            dl_info = aria2c.get_files(gid)[0]
+            # stat = aria2c.get_stat()
 
-        await GameApi.resource.getAllCharacterIconData(chunk_handler)
-        chara_icon_file_f.close()
+            dl_bar.n = int(dl_info["completedLength"])
+            dl_bar.refresh(dl_bar.lock_args)
+
+            if (
+                dl_info["length"] == dl_info["completedLength"]
+                and dl_info["completedLength"] != "0"
+            ):
+                break
+
+        # chara_icon_file_f = CharaIconPath.open("wb+")
+        # def chunk_handler(chunk):
+        #     dl_bar.update(len(chunk))
+        #     chara_icon_file_f.write(chunk)
+        # await GameApi.resource.getAllCharacterIconData(chunk_handler)
+        # chara_icon_file_f.close()
+
         dl_bar.close()
     else:
         log.info(f"当前图标缓存已经是最新")
@@ -322,12 +339,11 @@ async def save_specials(
             await GameResApi.save_MScenes(
                 MSceneId, output_path, update_output_path, force_download
             )
-            
+
         if MAdults is not None:
             await GameResApi.save_MAdults(
                 MAdultId, output_path, update_output_path, force_download
             )
-            
 
     return res_special
 
